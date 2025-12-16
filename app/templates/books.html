@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kitaplar • Kütüphane</title>
+  <style>
+    :root{
+      --bg:#070A12;
+      --bg2:#0B1020;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.09);
+      --text:#EAF0FF;
+      --muted: rgba(234,240,255,.68);
+      --line: rgba(255,255,255,.12);
+      --accent:#6EE7FF;
+      --accent2:#A78BFA;
+      --good:#34D399;
+      --bad:#FB7185;
+      --warn:#FBBF24;
+      --radius: 18px;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:
+        radial-gradient(1000px 500px at 20% 10%, rgba(110,231,255,.14), transparent 60%),
+        radial-gradient(900px 500px at 85% 15%, rgba(167,139,250,.14), transparent 55%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
+      min-height:100vh;
+      padding: 22px;
+    }
+    .shell{ width:min(1200px,100%); margin:0 auto; }
+    .nav{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:14px 16px;
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.04);
+      box-shadow: var(--shadow);
+      position: sticky; top: 14px; z-index: 10;
+      backdrop-filter: blur(12px);
+    }
+    .brand{ display:flex; align-items:center; gap:12px; }
+    .logo{
+      width:42px; height:42px; border-radius: 14px;
+      background: linear-gradient(135deg, rgba(110,231,255,.35), rgba(167,139,250,.35));
+      border:1px solid rgba(255,255,255,.16);
+      display:grid; place-items:center;
+    }
+    .brand h1{ font-size: 16px; margin:0; letter-spacing:.01em; }
+    .brand .muted{ font-size:12px; margin-top:2px; }
+    .navlinks{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .link{
+      color: rgba(234,240,255,.9);
+      text-decoration:none;
+      font-size: 13px;
+      padding:9px 10px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      transition:.15s ease;
+    }
+    .link:hover{ transform: translateY(-1px); border-color: rgba(110,231,255,.25); }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      font-size:12px; padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      color: rgba(234,240,255,.88);
+    }
+    .dot{ width:8px; height:8px; border-radius:999px; background: var(--good); box-shadow: 0 0 0 4px rgba(52,211,153,.12); }
+    .grid{ display:grid; grid-template-columns: 1.6fr .9fr; gap:16px; margin-top:16px; }
+    .card{
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.04);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .cardhd{
+      padding:14px 14px 12px;
+      display:flex; justify-content:space-between; align-items:flex-end; gap:12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), transparent);
+    }
+    .cardhd h2{ margin:0; font-size: 16px; letter-spacing:.01em; }
+    .cardhd .muted{ font-size:12px; }
+    .toolbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
+    .input{
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      outline:none;
+      transition:.2s ease;
+      width: 260px;
+    }
+    .input:focus{
+      border-color: rgba(110,231,255,.55);
+      box-shadow: 0 0 0 5px rgba(110,231,255,.10);
+    }
+    .btn{
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: rgba(234,240,255,.92);
+      cursor:pointer;
+      transition:.15s ease;
+      font-weight:600;
+    }
+    .btn:hover{ transform: translateY(-1px); border-color: rgba(167,139,250,.28); }
+    .btn.primary{
+      border:0;
+      background: linear-gradient(135deg, rgba(110,231,255,.95), rgba(167,139,250,.95));
+      color:#071018;
+      box-shadow: 0 14px 35px rgba(110,231,255,.18);
+    }
+    table{ width:100%; border-collapse: collapse; }
+    th, td{ padding:12px 14px; border-bottom:1px solid rgba(255,255,255,.08); vertical-align:top; }
+    th{ font-size:12px; color: rgba(234,240,255,.70); text-transform:uppercase; letter-spacing:.12em; }
+    td{ font-size:14px; }
+    .title{ font-weight:700; }
+    .sub{ color: rgba(234,240,255,.65); font-size: 12px; margin-top:4px; }
+    .qty{ display:inline-flex; align-items:center; gap:10px; justify-content:flex-end; }
+    .badge{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      font-size: 12px;
+      color: rgba(234,240,255,.88);
+    }
+    .badge.good{ border-color: rgba(52,211,153,.22); }
+    .badge.bad{ border-color: rgba(251,113,133,.22); }
+    .miniDot{ width:7px; height:7px; border-radius:999px; background: var(--warn); }
+    .badge.good .miniDot{ background: var(--good); }
+    .badge.bad .miniDot{ background: var(--bad); }
+    .body{ padding: 14px; }
+    .formgrid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .formgrid2{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .help{ color: rgba(234,240,255,.62); font-size: 12px; line-height:1.45; margin-top:10px; }
+    .toast{
+      position: fixed; inset: 18px 18px auto auto;
+      width:min(420px, calc(100vw - 36px));
+      border-radius: 16px;
+      padding: 12px 14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      display:none;
+      z-index: 99;
+    }
+    .toast.show{ display:block; animation: pop .2s ease-out; }
+    @keyframes pop{ from{ transform: translateY(-6px); opacity:.6;} to{ transform: translateY(0); opacity:1;} }
+    .toast.ok{ border-color: rgba(52,211,153,.35); }
+    .toast.err{ border-color: rgba(251,113,133,.35); }
+    .toast b{ display:block; margin-bottom:2px; }
+    .toast .small{ color: rgba(234,240,255,.66); font-size: 12px; }
+
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      .input{ width:100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="nav">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M6 4h11a2 2 0 0 1 2 2v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V4z" stroke="rgba(234,240,255,.92)" stroke-width="1.6"/>
+            <path d="M8 7h8M8 10h8M8 13h6" stroke="rgba(234,240,255,.75)" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Kitaplar</h1>
+          <div class="muted">Kullanıcı: <b>{{ username }}</b> • Rol: <b id="roleText">{{ role }}</b></div>
+        </div>
+      </div>
+
+      <div class="navlinks">
+        <span class="pill"><span class="dot"></span> Oturum açık</span>
+        <a class="link" href="/books-page">Kitaplar</a>
+        <a class="link" href="/borrow-page">Ödünç / İade</a>
+        <a class="link" href="/admin" id="adminLink" style="display:none;">Admin</a>
+        <a class="link" href="/logout">Çıkış</a>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- LIST -->
+      <div class="card">
+        <div class="cardhd">
+          <div>
+            <h2>Kitap Listesi</h2>
+            <div class="muted" id="listMeta">—</div>
+          </div>
+          <div class="toolbar">
+            <input class="input" id="q" placeholder="Ara: başlık / yazar / ISBN" />
+            <button class="btn" onclick="loadBooks()">Yenile</button>
+            <button class="btn primary" onclick="quickBorrowGo()">Ödünç Sayfası</button>
+          </div>
+        </div>
+
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:70px;">ID</th>
+                <th>Kitap</th>
+                <th style="width:230px;">Yazar</th>
+                <th class="right" style="width:170px;">Mevcut</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ADMIN CREATE (role based) -->
+      <div class="card" id="adminCard">
+        <div class="cardhd">
+          <div>
+            <h2>Hızlı Ekle</h2>
+            <div class="muted">Sadece admin rolüyle görünür.</div>
+          </div>
+          <button class="btn" onclick="clearForm()">Temizle</button>
+        </div>
+
+        <div class="body">
+          <div class="formgrid">
+            <div>
+              <label class="muted" style="font-size:12px;">Başlık</label>
+              <input class="input" id="title" placeholder="Örn: Clean Code" style="width:100%;" />
+            </div>
+            <div>
+              <label class="muted" style="font-size:12px;">Yazar</label>
+              <input class="input" id="author" placeholder="Örn: Robert C. Martin" style="width:100%;" />
+            </div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <label class="muted" style="font-size:12px;">ISBN (opsiyonel)</label>
+            <input class="input" id="isbn" placeholder="978-..." style="width:100%;" />
+          </div>
+
+          <div class="formgrid2" style="margin-top:10px;">
+            <div>
+              <label class="muted" style="font-size:12px;">Toplam</label>
+              <input class="input" id="total" type="number" min="1" value="1" style="width:100%;" />
+            </div>
+            <div>
+              <label class="muted" style="font-size:12px;">Mevcut</label>
+              <input class="input" id="avail" type="number" min="0" value="1" style="width:100%;" />
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px; margin-top:12px;">
+            <button class="btn primary" style="flex:1;" onclick="createBook()">Kaydet</button>
+            <button class="btn" style="flex:1;" onclick="loadBooks()">Listeyi Yenile</button>
+          </div>
+
+          <div class="help" id="adminMsg"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">
+    <b id="toastTitle">Bildirim</b>
+    <div id="toastBody" class="small"></div>
+  </div>
+
+  <script>
+    const role = "{{ role }}";
+    let allBooks = [];
+
+    function toast(msg, ok=true, title=null){
+      const t = document.getElementById("toast");
+      document.getElementById("toastTitle").textContent = title || (ok ? "Başarılı" : "Hata");
+      document.getElementById("toastBody").textContent = msg || "";
+      t.className = "toast show " + (ok ? "ok" : "err");
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(()=> t.classList.remove("show"), 3200);
+    }
+
+    function escapeHtml(str){
+      return String(str ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function clearForm(){
+      document.getElementById("title").value = "";
+      document.getElementById("author").value = "";
+      document.getElementById("isbn").value = "";
+      document.getElementById("total").value = "1";
+      document.getElementById("avail").value = "1";
+      document.getElementById("adminMsg").textContent = "";
+    }
+
+    function quickBorrowGo(){ location.href = "/borrow-page"; }
+
+    function filterBooks(){
+      const q = (document.getElementById("q").value || "").trim().toLowerCase();
+      if(!q) return allBooks;
+      return allBooks.filter(b => {
+        const t = (b.title||"").toLowerCase();
+        const a = (b.author||"").toLowerCase();
+        const i = (b.isbn||"").toLowerCase();
+        return t.includes(q) || a.includes(q) || i.includes(q);
+      });
+    }
+
+    function render(list){
+      const tb = document.getElementById("tbody");
+      tb.innerHTML = "";
+
+      if(!list.length){
+        tb.innerHTML = `<tr><td colspan="4" style="color:rgba(234,240,255,.65); padding:16px;">Sonuç yok.</td></tr>`;
+        return;
+      }
+
+      for(const b of list){
+        const avail = Number(b.available_copies ?? 0);
+        const total = Number(b.total_copies ?? 0);
+        const badgeClass = avail > 0 ? "good" : "bad";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${b.id}</td>
+          <td>
+            <div class="title">${escapeHtml(b.title)}</div>
+            <div class="sub">${escapeHtml(b.isbn || "")}</div>
+          </td>
+          <td>${escapeHtml(b.author)}</td>
+          <td class="right">
+            <span class="badge ${badgeClass}">
+              <span class="miniDot"></span>
+              ${avail}/${total}
+            </span>
+          </td>
+        `;
+        tb.appendChild(tr);
+      }
+    }
+
+    async function loadBooks(){
+      try{
+        const res = await fetch("/web/api/books", { credentials:"include" });
+        const data = await res.json();
+        if(!res.ok || data.success === false){
+          toast(data.message || "Kitaplar alınamadı", false);
+          return;
+        }
+        allBooks = data.data || [];
+        const list = filterBooks();
+        render(list);
+        document.getElementById("listMeta").textContent = `Toplam ${allBooks.length} kitap • Gösterilen ${list.length}`;
+      }catch(e){
+        toast("İstek hatası: " + e, false);
+      }
+    }
+
+    async function createBook(){
+      const msg = document.getElementById("adminMsg");
+      msg.style.color = "rgba(234,240,255,.65)";
+      msg.textContent = "";
+
+      const title = (document.getElementById("title").value || "").trim();
+      const author = (document.getElementById("author").value || "").trim();
+      if(!title || !author){
+        toast("Başlık ve yazar zorunlu.", false, "Eksik");
+        return;
+      }
+
+      const payload = {
+        title,
+        author,
+        isbn: (document.getElementById("isbn").value || "").trim() || null,
+        total_copies: parseInt(document.getElementById("total").value || "1"),
+        available_copies: parseInt(document.getElementById("avail").value || "1")
+      };
+
+      try{
+        const res = await fetch("/web/api/books", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          credentials:"include",
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if(!res.ok || data.success === false){
+          toast(data.message || "Kaydetme başarısız", false);
+          return;
+        }
+        toast(`Kitap eklendi (id=${data.id})`, true);
+        clearForm();
+        await loadBooks();
+      }catch(e){
+        toast("İstek hatası: " + e, false);
+      }
+    }
+
+    document.getElementById("q").addEventListener("input", ()=>{
+      const list = filterBooks();
+      render(list);
+      document.getElementById("listMeta").textContent = `Toplam ${allBooks.length} kitap • Gösterilen ${list.length}`;
+    });
+
+    (function init(){
+      if(role === "admin"){
+        document.getElementById("adminLink").style.display = "inline-block";
+      }else{
+        document.getElementById("adminCard").style.display = "none";
+      }
+      loadBooks();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8"/>
+  <title>Kayıt Ol</title>
+  <style>
+    body{font-family:Arial;margin:30px;display:flex;justify-content:center}
+    .card{width:420px;border:1px solid #ddd;border-radius:14px;padding:18px;box-shadow:0 8px 30px rgba(0,0,0,.06)}
+    input{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;margin:8px 0;box-sizing:border-box}
+    button{width:100%;padding:12px;border:0;border-radius:12px;background:#111;color:#fff;cursor:pointer}
+    .muted{color:#666;font-size:13px}
+    a{color:#111}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Kayıt Ol</h2>
+    <p class="muted">Hesap oluştur ve giriş yap.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div style="margin:10px 0;">
+          {% for category, msg in messages %}
+            <div class="muted">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+      <input name="username" placeholder="Username" required />
+      <input name="email" type="email" placeholder="Email" required />
+      <input name="password" type="password" placeholder="Şifre" required />
+      <button type="submit">Kayıt Ol</button>
+    </form>
+
+    <p class="muted" style="margin-top:10px;">
+      Zaten hesabın var mı? <a href="/login">Giriş yap</a>
+    </p>
+  </div>
+</body>
+</html>

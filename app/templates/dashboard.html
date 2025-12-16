@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <title>Panel</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; }
+    .top { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    .muted { color:#666; font-size:13px; }
+    a { text-decoration:none; }
+    .nav a { margin-right:10px; }
+    .card { border:1px solid #ddd; border-radius:12px; padding:14px; margin-top:14px; }
+    code { background:#f4f4f4; padding:2px 6px; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <div>
+      <h2>Dashboard</h2>
+      <p class="muted">
+        Kullanıcı: <b>{{ user.username }}</b> | Rol: <b>{{ user.role }}</b>
+      </p>
+    </div>
+
+    <div class="nav">
+      <a href="/">Ana sayfa</a>
+      <a href="/books-page">Kitaplar</a>
+      <a href="/borrow-page">Ödünç Al</a>
+      <a href="/logout">Çıkış</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Sayfalar</h3>
+    <ul>
+      <li><a href="/books-page"><b>Kitaplar Sayfası</b></a> (UI)</li>
+      <li><a href="/borrow-page"><b>Ödünç Al Sayfası</b></a> (UI)</li>
+    </ul>
+    <p class="muted">
+      Not: API endpointleri tarayıcıda açılabilir ama UI sayfaları bunları fetch ile kullanır.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>API Endpointler</h3>
+    <ul>
+      <li><b>Kitaplar (GET)</b> : <code>/web/api/books</code></li>
+      <li><b>Kitap Ekle (POST)</b> : <code>/web/api/books</code> (admin)</li>
+      <li><b>Kitap Güncelle (PUT)</b> : <code>/web/api/books/&lt;id&gt;</code> (admin)</li>
+      <li><b>Kitap Sil (DELETE)</b> : <code>/web/api/books/&lt;id&gt;</code> (admin)</li>
+
+      <li style="margin-top:8px;"><b>Ödünç Al (POST)</b> : <code>/web/api/borrow</code></li>
+      <li><b>Benim Ödünçlerim (GET)</b> : <code>/web/api/borrow/my</code></li>
+      <li><b>İade (POST)</b> : <code>/web/api/borrow/return/&lt;id&gt;</code></li>
+
+      <li style="margin-top:8px;"><b>Admin Stats (GET)</b> : <code>/web/api/admin/stats</code></li>
+      <li><b>Admin Overdue (GET)</b> : <code>/web/api/admin/overdue</code></li>
+      <li><b>Admin Notifications (GET)</b> : <code>/web/api/admin/notifications</code></li>
+      <li><b>Run Late Check (POST)</b> : <code>/web/api/admin/run-late-check</code></li>
+    </ul>
+  </div>
+</body>
+</html>

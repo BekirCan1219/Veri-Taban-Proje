@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Giriş • Kütüphane</title>
+  <style>
+    :root{
+      --bg0:#070A12;
+      --bg1:#0B1020;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.09);
+      --text:#EAF0FF;
+      --muted: rgba(234,240,255,.68);
+      --line: rgba(255,255,255,.12);
+      --accent:#6EE7FF;
+      --accent2:#A78BFA;
+      --good:#34D399;
+      --bad:#FB7185;
+      --warn:#FBBF24;
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+      --radius: 18px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:
+        radial-gradient(1200px 600px at 10% 10%, rgba(110,231,255,.18), transparent 60%),
+        radial-gradient(900px 500px at 90% 20%, rgba(167,139,250,.18), transparent 55%),
+        radial-gradient(800px 500px at 50% 90%, rgba(52,211,153,.12), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:28px;
+    }
+    .wrap{ width:min(980px, 100%); display:grid; grid-template-columns: 1.2fr .8fr; gap:18px; }
+    .panel{
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .hero{ padding:26px 26px 24px; position:relative; }
+    .brand{ display:flex; align-items:center; gap:12px; }
+    h1{ margin:14px 0 6px; font-size: 34px; letter-spacing:-.02em; }
+    .sub{ color:var(--muted); margin:0 0 18px; }
+    .chips{ display:flex; gap:10px; flex-wrap:wrap; }
+
+    .form{ padding:22px; border-left:1px solid var(--line); background: rgba(0,0,0,.12); }
+    .title{ font-size: 14px; letter-spacing:.12em; text-transform:uppercase; color: rgba(234,240,255,.65); margin:0 0 10px; }
+    .field{ margin:10px 0; }
+    label{ display:block; font-size: 12px; color: rgba(234,240,255,.72); margin:0 0 6px; }
+    input{
+      width:100%;
+      padding:12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+    }
+    .btn{
+      width:100%;
+      padding:12px;
+      border-radius:14px;
+      border:0;
+      cursor:pointer;
+      font-weight:700;
+      background: linear-gradient(135deg, rgba(110,231,255,.95), rgba(167,139,250,.95));
+    }
+    .hint{ margin-top:12px; font-size:12px; color:var(--muted); }
+    .register{
+      margin-top:14px;
+      text-align:center;
+      font-size:13px;
+      color:var(--muted);
+    }
+    .register a{
+      color:var(--accent);
+      font-weight:700;
+      text-decoration:none;
+    }
+    .register a:hover{ text-decoration:underline; }
+
+    .toast{
+      position: fixed; top:18px; right:18px;
+      width:420px;
+      padding:12px;
+      border-radius:16px;
+      background: rgba(0,0,0,.65);
+      border:1px solid rgba(255,255,255,.18);
+      display:none;
+    }
+    .toast.show{ display:block; }
+  </style>
+</head>
+
+<body>
+
+  <div class="wrap panel">
+    <div class="hero">
+      <h1>Tek panelden<br>kütüphaneni yönet.</h1>
+      <p class="sub">Kitaplar, ödünçler ve admin paneli tek yerde.</p>
+    </div>
+
+    <div class="form">
+      <div class="title">Giriş</div>
+
+      <form method="POST" action="/login" onsubmit="return onSubmitLogin()">
+        <div class="field">
+          <label>Kullanıcı adı</label>
+          <input id="username" name="username" placeholder="örn: admin">
+        </div>
+        <div class="field">
+          <label>Şifre</label>
+          <input id="password" name="password" type="password">
+        </div>
+
+        <button class="btn" id="loginBtn">Giriş Yap</button>
+
+        <div class="hint">
+          Admin isen girişten sonra Admin Panel açılır.
+        </div>
+
+        <!-- 🔥 REGISTER GÖRÜNÜRLÜK -->
+        <div class="register">
+          Hesabın yok mu?
+          <a href="/register">Kayıt Ol</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- FLASH → TOAST -->
+  <div id="toast" class="toast"></div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <script>
+        const t = document.getElementById("toast");
+        t.textContent = "{{ messages[0][1] }}";
+        t.classList.add("show");
+        setTimeout(()=>t.classList.remove("show"), 4000);
+      </script>
+    {% endif %}
+  {% endwith %}
+
+  <script>
+    function onSubmitLogin(){
+      const u = username.value.trim();
+      const p = password.value.trim();
+      if(!u || !p){
+        alert("Kullanıcı adı ve şifre zorunlu");
+        return false;
+      }
+      loginBtn.textContent = "Giriş yapılıyor…";
+      return true;
+    }
+    username.focus();
+  </script>
+</body>
+</html>
