@@ -7,6 +7,8 @@ from app.repositories.borrow_repo import BorrowRepo
 from app.models.borrow import Borrow
 from app.extensions import db
 from sqlalchemy import text
+from app.models.penalty import Penalty
+
 
 
 web_api_bp = Blueprint("web_api", __name__, url_prefix="/web/api")
@@ -329,6 +331,11 @@ def admin_run_late_check():
 
     from datetime import datetime
     from app.services.mail_service import MailService
+    from app.extensions import db
+    from app.models.penalty import Penalty
+    from app.models.borrow import Borrow
+
+    DAILY_FEE = 5  # günlük ceza (istersen config’e taşı)
 
     now = datetime.utcnow()
 
@@ -338,16 +345,42 @@ def admin_run_late_check():
     ).all()
 
     mailed = 0
+    penalties_upserted = 0
 
     for b in rows:
-        if b.status != "overdue":
+        # 1) status overdue
+        if getattr(b, "status", None) != "overdue":
             b.status = "overdue"
 
-        sent = MailService.send_overdue_mail(b)
-        if sent:
+        # 2) ceza hesapla
+        days_overdue = max(0, (now.date() - b.due_date.date()).days)
+        amount = days_overdue * DAILY_FEE
+
+        # 3) upsert (borrow_id unique)
+        p = Penalty.query.filter_by(borrow_id=b.id).first()
+        if not p:
+            p = Penalty(
+                borrow_id=b.id,
+                days_overdue=days_overdue,
+                daily_fee=DAILY_FEE,
+                amount=amount,
+                is_paid=False
+            )
+            db.session.add(p)
+        else:
+            # ödenmişse bile gün/amount güncellensin mi? genelde hayır.
+            # ama sen istersen is_paid True ise dokunmayız:
+            if not p.is_paid:
+                p.days_overdue = days_overdue
+                p.daily_fee = DAILY_FEE
+                p.amount = amount
+
+        penalties_upserted += 1
+
+        # 4) mail gönder + logla (senin MailService’in log yazdığı varsayımıyla)
+        if MailService.send_overdue_mail(b):
             mailed += 1
 
-    from app.extensions import db
     db.session.commit()
 
     return jsonify({
@@ -355,9 +388,11 @@ def admin_run_late_check():
         "message": "Gecikme kontrolü tamamlandı",
         "data": {
             "overdue_found": len(rows),
+            "penalties_upserted": penalties_upserted,
             "emails_sent": mailed
         }
     })
+
 @web_api_bp.get("/admin/mail-report")
 def admin_mail_report():
     if not _require_login():
@@ -382,11 +417,11 @@ def admin_mail_report():
         data.append({
             "id": n.id,
             "borrow_id": n.borrow_id,
-            "type": getattr(n, "type", None),
-            "success": bool(getattr(n, "success", False)),
-            "sent_at": str(getattr(n, "sent_at", "")),
-            "email": getattr(n, "email", None),
-            "message": getattr(n, "message", None),
+            "type": n.type,
+            "success": n.success,
+            "sent_at": str(n.sent_at),
+            "email": n.email,
+            "message": n.message,
             "due_date": str(b.due_date) if b else None,
             "user_id": int(b.user_id) if b else None,
             "book_id": int(b.book_id) if b else None,
@@ -394,3 +429,47 @@ def admin_mail_report():
 
     return jsonify({"success": True, "data": data})
 
+@web_api_bp.get("/debug/session")
+def debug_session():
+    return jsonify({
+        "keys": list(session.keys()),
+        "username": session.get("username"),
+        "role": session.get("role"),
+        "user_id": session.get("user_id"),
+    })
+
+
+@web_api_bp.get("/admin/penalties")
+def admin_penalties():
+    if not _require_login():
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
+    if session.get("role") != "admin":
+        return jsonify({"success": False, "message": "Yetkisiz"}), 403
+
+    only_unpaid = request.args.get("only_unpaid", "0") == "1"
+
+    q = db.session.query(Penalty, Borrow).join(Borrow, Borrow.id == Penalty.borrow_id)
+
+    if only_unpaid:
+        q = q.filter(Penalty.is_paid == False)
+
+    rows = q.order_by(Penalty.updated_at.desc()).limit(200).all()
+
+    data = []
+    for p, b in rows:
+        data.append({
+            "id": p.id,
+            "borrow_id": p.borrow_id,
+            "days_overdue": int(p.days_overdue),
+            "daily_fee": float(p.daily_fee),
+            "amount": float(p.amount),
+            "is_paid": bool(p.is_paid),
+            "updated_at": str(p.updated_at),
+            "created_at": str(p.created_at),
+            "due_date": str(b.due_date) if b else None,
+            "user_id": int(b.user_id) if b else None,
+            "book_id": int(b.book_id) if b else None,
+            "status": getattr(b, "status", None)
+        })
+
+    return jsonify({"success": True, "data": data})
