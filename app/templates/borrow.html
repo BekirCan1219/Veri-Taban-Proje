@@ -2,300 +2,179 @@
 <html lang="tr">
 <head>
   <meta charset="utf-8" />
+  <title>Ödünç Al</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ödünç / İade • Kütüphane</title>
   <style>
-    :root{
-      --bg:#070A12;
-      --bg2:#0B1020;
-      --card: rgba(255,255,255,.06);
-      --text:#EAF0FF;
-      --muted: rgba(234,240,255,.68);
-      --line: rgba(255,255,255,.12);
-      --accent:#6EE7FF;
-      --accent2:#A78BFA;
-      --good:#34D399;
-      --bad:#FB7185;
-      --warn:#FBBF24;
-      --radius: 18px;
-      --shadow: 0 18px 60px rgba(0,0,0,.45);
-    }
-    *{ box-sizing:border-box; }
-    body{
-      margin:0; color:var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background:
-        radial-gradient(1000px 500px at 20% 10%, rgba(110,231,255,.14), transparent 60%),
-        radial-gradient(900px 500px at 85% 15%, rgba(167,139,250,.14), transparent 55%),
-        linear-gradient(180deg, var(--bg), var(--bg2));
-      min-height:100vh;
-      padding: 22px;
-    }
-    .shell{ width:min(1200px,100%); margin:0 auto; }
-    .nav{
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
-      padding:14px 16px;
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      background: rgba(255,255,255,.04);
-      box-shadow: var(--shadow);
-      position: sticky; top: 14px; z-index: 10;
-      backdrop-filter: blur(12px);
-    }
-    .brand{ display:flex; align-items:center; gap:12px; }
-    .logo{
-      width:42px; height:42px; border-radius: 14px;
-      background: linear-gradient(135deg, rgba(110,231,255,.35), rgba(167,139,250,.35));
-      border:1px solid rgba(255,255,255,.16);
-      display:grid; place-items:center;
-    }
-    .brand h1{ font-size: 16px; margin:0; }
-    .brand .muted{ font-size:12px; margin-top:2px; }
-    .navlinks{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
-    .link{
-      color: rgba(234,240,255,.9);
-      text-decoration:none;
-      font-size: 13px;
-      padding:9px 10px;
-      border-radius: 12px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.04);
-      transition:.15s ease;
-    }
-    .link:hover{ transform: translateY(-1px); border-color: rgba(110,231,255,.25); }
+    body { font-family: Arial, sans-serif; margin: 30px; background:#050712; color:#f5f5ff; }
+    .top { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap: wrap; }
+    .muted { color:#9ca3af; font-size:13px; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:16px; }
+    .card { border:1px solid #1f2933; border-radius: 16px; padding: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.35); background:linear-gradient(145deg,#0b1120,#020617); }
+    input, select { padding:10px; width:100%; margin:6px 0; border:1px solid #1f2933; border-radius:10px; background:#020617; color:#e5e7eb; }
+    input:focus, select:focus { outline:none; border-color:#38bdf8; box-shadow:0 0 0 1px #38bdf8; }
+    button { padding:10px 12px; border:0; border-radius:10px; cursor:pointer; font-weight:600; }
+    button.primary { background:#38bdf8; color:#020617; }
+    button.primary:hover { background:#0ea5e9; }
+    button.ghost { background:#020617; color:#e5e7eb; border:1px solid #1f2933; }
+    button.ghost:hover { border-color:#4b5563; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap: wrap; }
+    table { width:100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border-bottom: 1px solid #111827; padding: 8px; text-align:left; font-size: 14px; }
+    th { color:#9ca3af; font-weight:600; }
+    .badge { display:inline-block; padding:3px 8px; border-radius:999px; font-size:12px; background:#111827; }
+    .ok { background:#065f46; color:#bbf7d0; }
+    .warn { background:#78350f; color:#fed7aa; }
+    .err { background:#7f1d1d; color:#fecaca; }
+    .msg { padding:10px 12px; border-radius: 10px; margin-top:10px; display:none; }
+    .msg.show { display:block; }
+    .msg.ok { background:#064e3b; color:#bbf7d0; }
+    .msg.warn { background:#78350f; color:#fed7aa; }
+    .msg.err { background:#7f1d1d; color:#fecaca; }
+    a { color:#38bdf8; text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    .small { font-size:12px; }
 
-    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:16px; }
-    .card{
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      background: rgba(255,255,255,.04);
-      box-shadow: var(--shadow);
-      overflow:hidden;
+    /* Sayfalama */
+    .pager-wrap { display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:8px; flex-wrap:wrap; }
+    .pager { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+    .pager button {
+      padding:4px 9px;
+      font-size:12px;
+      border-radius:999px;
+      border:1px solid #1f2933;
+      background:#020617;
+      color:#e5e7eb;
     }
-    .cardhd{
-      padding:14px 14px 12px;
-      display:flex; justify-content:space-between; align-items:flex-end; gap:12px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      background: linear-gradient(180deg, rgba(255,255,255,.04), transparent);
+    .pager button.active {
+      background:#e5e7eb;
+      color:#020617;
+      border-color:#e5e7eb;
     }
-    .cardhd h2{ margin:0; font-size: 16px; }
-    .cardhd .muted{ font-size:12px; }
-    .body{ padding: 14px; }
-    .row{ display:flex; gap:10px; flex-wrap:wrap; }
-    .input, select{
-      padding:10px 12px;
-      border-radius: 14px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.06);
-      color: var(--text);
-      outline:none;
-      transition: .2s ease;
-      width:100%;
+    .pager button:disabled {
+      opacity:.4;
+      cursor:default;
     }
-    .input:focus, select:focus{
-      border-color: rgba(110,231,255,.55);
-      box-shadow: 0 0 0 5px rgba(110,231,255,.10);
-    }
-    .btn{
-      padding:10px 12px;
-      border-radius: 14px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.06);
-      color: rgba(234,240,255,.92);
-      cursor:pointer;
-      transition:.15s ease;
-      font-weight:600;
-    }
-    .btn:hover{ transform: translateY(-1px); border-color: rgba(167,139,250,.28); }
-    .btn.primary{
-      border:0;
-      background: linear-gradient(135deg, rgba(110,231,255,.95), rgba(167,139,250,.95));
-      color:#071018;
-      box-shadow: 0 14px 35px rgba(110,231,255,.18);
-    }
-    table{ width:100%; border-collapse: collapse; }
-    th, td{ padding:12px 14px; border-bottom:1px solid rgba(255,255,255,.08); vertical-align:top; }
-    th{ font-size:12px; color: rgba(234,240,255,.70); text-transform:uppercase; letter-spacing:.12em; }
-    td{ font-size:14px; }
-    .badge{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:6px 10px; border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      font-size: 12px;
-      color: rgba(234,240,255,.88);
-      white-space:nowrap;
-    }
-    .badge.ok{ border-color: rgba(52,211,153,.22); }
-    .badge.warn{ border-color: rgba(251,191,36,.22); }
-    .badge.err{ border-color: rgba(251,113,133,.22); }
-    .toast{
-      position: fixed; inset: 18px 18px auto auto;
-      width:min(420px, calc(100vw - 36px));
-      border-radius: 16px;
-      padding: 12px 14px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.55);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 20px 60px rgba(0,0,0,.45);
-      display:none;
-      z-index: 99;
-    }
-    .toast.show{ display:block; animation: pop .2s ease-out; }
-    @keyframes pop{ from{ transform: translateY(-6px); opacity:.6;} to{ transform: translateY(0); opacity:1;} }
-    .toast.ok{ border-color: rgba(52,211,153,.35); }
-    .toast.err{ border-color: rgba(251,113,133,.35); }
-    .toast b{ display:block; margin-bottom:2px; }
-    .toast .small{ color: rgba(234,240,255,.66); font-size: 12px; }
 
-    @media (max-width: 980px){
+    @media (max-width: 900px){
+      body{ margin:16px; }
       .grid{ grid-template-columns: 1fr; }
     }
   </style>
 </head>
+
 <body>
-  <div class="shell">
-    <div class="nav">
-      <div class="brand">
-        <div class="logo" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M6 4h11a2 2 0 0 1 2 2v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V4z" stroke="rgba(234,240,255,.92)" stroke-width="1.6"/>
-            <path d="M8 7h8M8 10h8M8 13h6" stroke="rgba(234,240,255,.75)" stroke-width="1.6" stroke-linecap="round"/>
-          </svg>
+  <div class="top">
+    <div>
+      <h2>Kitap Seçerek Ödünç Alma</h2>
+      <div class="muted">Kitap seç → kaç gün ödünç alacağını yaz → “Ödünç Al”.</div>
+    </div>
+    <div class="row">
+      <a href="/" class="muted">Ana sayfa</a>
+      <a href="/books-page" class="muted">Kitaplar</a>
+      <a href="/logout" class="muted">Çıkış</a>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Ödünç Al</h3>
+
+      <label class="muted">Kitap</label>
+      <select id="bookSelect"></select>
+
+      <div class="row">
+        <div style="flex:1;">
+          <label class="muted">Gün sayısı</label>
+          <input id="daysInput" type="number" min="1" max="60" value="14" />
         </div>
-        <div>
-          <h1>Ödünç / İade</h1>
-          <div class="muted">Kullanıcı: <b>{{ username }}</b> • Rol: <b>{{ role }}</b></div>
+        <div style="flex:1;">
+          <label class="muted">Arama</label>
+          <input id="searchInput" type="text" placeholder="Başlık / Yazar / ISBN ara..." />
         </div>
       </div>
-      <div class="navlinks">
-        <a class="link" href="/books-page">Kitaplar</a>
-        <a class="link" href="/borrow-page"><b>Ödünç / İade</b></a>
-        <a class="link" href="/admin" id="adminLink" style="display:none;">Admin</a>
-        <a class="link" href="/logout">Çıkış</a>
+
+      <div class="row" style="margin-top:8px;">
+        <button class="primary" id="borrowBtn">Ödünç Al</button>
+        <button class="ghost" id="refreshBtn">Listeyi Yenile</button>
+      </div>
+
+      <div id="msgBox" class="msg"></div>
+
+      <hr style="border:0; border-top:1px solid #111827; margin:14px 0;">
+
+      <div class="muted small">
+        İpucu: “Mevcut kopya” 0 ise ödünç alamazsın. Liste sayfalı; en alttan sayfalar arasında geçiş yapabilirsin.
       </div>
     </div>
 
-    <div class="grid">
-      <!-- Borrow card -->
-      <div class="card">
-        <div class="cardhd">
-          <div>
-            <h2>Ödünç Al</h2>
-            <div class="muted">Kitap seç • gün sayısı • tek tıkla ödünç al</div>
-          </div>
-          <button class="btn" onclick="refreshAll()">Yenile</button>
-        </div>
-
-        <div class="body">
-          <label class="muted" style="font-size:12px;">Kitap</label>
-          <select id="bookSelect"></select>
-
-          <div class="row" style="margin-top:10px;">
-            <div style="flex:1; min-width:200px;">
-              <label class="muted" style="font-size:12px;">Gün sayısı</label>
-              <input class="input" id="daysInput" type="number" min="1" max="60" value="14" />
-            </div>
-            <div style="flex:1; min-width:200px;">
-              <label class="muted" style="font-size:12px;">Arama</label>
-              <input class="input" id="searchInput" placeholder="Başlık / Yazar / ISBN" />
-            </div>
-          </div>
-
-          <div class="row" style="margin-top:12px;">
-            <button class="btn primary" style="flex:1;" id="borrowBtn">Ödünç Al</button>
-            <button class="btn" style="flex:1;" id="refreshBooksBtn">Kitapları Yenile</button>
-          </div>
-
-          <div class="muted" style="margin-top:12px; font-size:12px;">
-            “Mevcut” 0 olan kitaplar listede görünür ama seçilemez.
-          </div>
-        </div>
+    <div class="card">
+      <div class="top" style="margin:0;">
+        <h3 style="margin:0;">Kitaplar</h3>
+        <span class="badge" id="countBadge">0</span>
       </div>
 
-      <!-- Books list card -->
-      <div class="card">
-        <div class="cardhd">
-          <div>
-            <h2>Kitaplar</h2>
-            <div class="muted" id="countMeta">—</div>
-          </div>
-          <button class="btn" onclick="loadBooks()">Listeyi Güncelle</button>
-        </div>
-        <div style="overflow:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Kitap</th>
-                <th>Yazar</th>
-                <th style="width:160px;">Mevcut</th>
-              </tr>
-            </thead>
-            <tbody id="booksTbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Kitap</th>
+            <th>Yazar</th>
+            <th>Mevcut</th>
+          </tr>
+        </thead>
+        <tbody id="booksTbody"></tbody>
+      </table>
 
-    <!-- My borrows -->
-    <div class="card" style="margin-top:16px;">
-      <div class="cardhd">
-        <div>
-          <h2>Benim Ödünçlerim</h2>
-          <div class="muted">İade işlemini buradan yap</div>
-        </div>
-        <button class="btn" onclick="loadMyBorrows()">Ödünçleri Yenile</button>
-      </div>
-      <div style="overflow:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>Kitap</th>
-              <th>Alış</th>
-              <th>Teslim</th>
-              <th>Durum</th>
-              <th style="width:160px;">İşlem</th>
-            </tr>
-          </thead>
-          <tbody id="myBorrowsTbody"></tbody>
-        </table>
+      <!-- sayfalama + info -->
+      <div class="pager-wrap">
+        <div class="muted small" id="booksInfo"></div>
+        <div class="pager" id="booksPager"></div>
       </div>
     </div>
   </div>
 
-  <div id="toast" class="toast">
-    <b id="toastTitle">Bildirim</b>
-    <div id="toastBody" class="small"></div>
+  <div class="card" style="margin-top:16px;">
+    <div class="top" style="margin:0;">
+      <h3 style="margin:0;">Benim Ödünçlerim</h3>
+      <button class="ghost" id="myRefreshBtn">Yenile</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Kitap</th>
+          <th>Alış</th>
+          <th>Teslim Tarihi</th>
+          <th>Durum</th>
+          <th>İşlem</th>
+        </tr>
+      </thead>
+      <tbody id="myBorrowsTbody"></tbody>
+    </table>
   </div>
 
 <script>
-  const role = "{{ role }}";
   const bookSelect = document.getElementById("bookSelect");
   const booksTbody = document.getElementById("booksTbody");
   const myBorrowsTbody = document.getElementById("myBorrowsTbody");
   const daysInput = document.getElementById("daysInput");
   const searchInput = document.getElementById("searchInput");
   const borrowBtn = document.getElementById("borrowBtn");
-  const refreshBooksBtn = document.getElementById("refreshBooksBtn");
+  const refreshBtn = document.getElementById("refreshBtn");
+  const myRefreshBtn = document.getElementById("myRefreshBtn");
+  const msgBox = document.getElementById("msgBox");
+  const countBadge = document.getElementById("countBadge");
+  const booksInfo = document.getElementById("booksInfo");
+  const booksPager = document.getElementById("booksPager");
 
   let allBooks = [];
+  let pageSize = 10;
+  let currentPage = 1;
 
-  function toast(msg, ok=true, title=null){
-    const t = document.getElementById("toast");
-    document.getElementById("toastTitle").textContent = title || (ok ? "Başarılı" : "Hata");
-    document.getElementById("toastBody").textContent = msg || "";
-    t.className = "toast show " + (ok ? "ok" : "err");
-    clearTimeout(window.__toastTimer);
-    window.__toastTimer = setTimeout(()=> t.classList.remove("show"), 3200);
-  }
-
-  function escapeHtml(s) {
-    return String(s || "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
+  function showMsg(text, type="ok") {
+    msgBox.className = "msg show " + type;
+    msgBox.textContent = text;
+    clearTimeout(window.__msgTimer);
+    window.__msgTimer = setTimeout(() => msgBox.classList.remove("show"), 4000);
   }
 
   async function apiGet(url) {
@@ -315,9 +194,18 @@
     return { res, data };
   }
 
-  function filterBooks(){
+  function escapeHtml(s) {
+    return String(s || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function getFilteredBooks() {
     const q = (searchInput.value || "").toLowerCase().trim();
-    if(!q) return allBooks;
+    if (!q) return allBooks;
     return allBooks.filter(b => {
       const t = (b.title || "").toLowerCase();
       const a = (b.author || "").toLowerCase();
@@ -326,58 +214,96 @@
     });
   }
 
-  function renderBooks(list) {
+  function renderBooks() {
+    const filtered = getFilteredBooks();
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    const startIndex = (currentPage - 1) * pageSize;
+    const pageItems = filtered.slice(startIndex, startIndex + pageSize);
+
     booksTbody.innerHTML = "";
     bookSelect.innerHTML = "";
+    countBadge.textContent = String(total);
 
-    document.getElementById("countMeta").textContent = `Toplam ${allBooks.length} • Gösterilen ${list.length}`;
-
-    if (list.length === 0) {
-      booksTbody.innerHTML = `<tr><td colspan="3" style="color:rgba(234,240,255,.65); padding:16px;">Kitap bulunamadı</td></tr>`;
+    if (total === 0) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="3" class="muted">Kitap bulunamadı</td>`;
+      booksTbody.appendChild(tr);
+      booksInfo.textContent = "0 kayıt";
+      booksPager.innerHTML = "";
       return;
     }
 
-    for (const b of list) {
-      const avail = Number(b.available_copies ?? 0);
-      const total = Number(b.total_copies ?? 0);
-
-      // table
+    // tablo
+    for (const b of pageItems) {
       const tr = document.createElement("tr");
+      const avail = Number(b.available_copies ?? 0);
+
       tr.innerHTML = `
-        <td>
-          <b>${escapeHtml(b.title || "")}</b>
-          <div style="color:rgba(234,240,255,.62); font-size:12px; margin-top:4px;">${escapeHtml(b.isbn || "")}</div>
-        </td>
+        <td><b>${escapeHtml(b.title || "")}</b><div class="muted small">${escapeHtml(b.isbn || "")}</div></td>
         <td>${escapeHtml(b.author || "")}</td>
         <td>
-          <span class="badge ${avail>0 ? "ok":"err"}">${avail} / ${total}</span>
+          <span class="badge ${avail > 0 ? "ok" : "err"}">${avail} / ${Number(b.total_copies ?? 0)}</span>
         </td>
       `;
       booksTbody.appendChild(tr);
+    }
 
-      // select
+    // select (her zaman tüm listeden, sayfadan bağımsız)
+    for (const b of filtered) {
+      const avail = Number(b.available_copies ?? 0);
       const opt = document.createElement("option");
       opt.value = b.id;
       opt.textContent = `${b.title} — ${b.author} (Mevcut: ${avail})`;
       opt.disabled = avail < 1;
       bookSelect.appendChild(opt);
     }
+
+    // info
+    booksInfo.textContent = `${total} kitap • Sayfa ${currentPage}/${totalPages}`;
+
+    // pager
+    booksPager.innerHTML = "";
+    if (totalPages > 1) {
+      const prevBtn = document.createElement("button");
+      prevBtn.textContent = "‹";
+      prevBtn.disabled = currentPage === 1;
+      prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; renderBooks(); } };
+      booksPager.appendChild(prevBtn);
+
+      for (let p = 1; p <= totalPages; p++) {
+        const btn = document.createElement("button");
+        btn.textContent = p;
+        if (p === currentPage) btn.classList.add("active");
+        btn.onclick = () => { currentPage = p; renderBooks(); };
+        booksPager.appendChild(btn);
+      }
+
+      const nextBtn = document.createElement("button");
+      nextBtn.textContent = "›";
+      nextBtn.disabled = currentPage === totalPages;
+      nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; renderBooks(); } };
+      booksPager.appendChild(nextBtn);
+    }
   }
 
   async function loadBooks() {
     const { res, data } = await apiGet("/web/api/books");
     if (!res.ok || !data.success) {
-      toast(data.message || "Kitaplar alınamadı", false);
+      showMsg(data.message || "Kitaplar alınamadı", "err");
       return;
     }
     allBooks = data.data || [];
-    renderBooks(filterBooks());
+    currentPage = 1;
+    renderBooks();
   }
 
   async function loadMyBorrows() {
     const { res, data } = await apiGet("/web/api/borrow/my");
     if (!res.ok || !data.success) {
-      toast(data.message || "Ödünçler alınamadı", false);
+      showMsg(data.message || "Ödünçler alınamadı", "err");
       return;
     }
 
@@ -385,24 +311,26 @@
     myBorrowsTbody.innerHTML = "";
 
     if (rows.length === 0) {
-      myBorrowsTbody.innerHTML = `<tr><td colspan="5" style="color:rgba(234,240,255,.65); padding:16px;">Henüz ödünç kaydın yok</td></tr>`;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="5" class="muted">Henüz ödünç kaydın yok</td>`;
+      myBorrowsTbody.appendChild(tr);
       return;
     }
 
     for (const x of rows) {
       const isReturned = !!x.returned_at;
-      const cls = isReturned ? "ok" : (x.status === "overdue" ? "err" : "warn");
+      const badgeClass = isReturned ? "ok" : (x.status === "overdue" ? "err" : "warn");
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td><b>${escapeHtml(x.book_title || "")}</b><div style="color:rgba(234,240,255,.62); font-size:12px; margin-top:4px;">#${x.id}</div></td>
+        <td><b>${escapeHtml(x.book_title || "")}</b><div class="muted small">#${x.id}</div></td>
         <td>${escapeHtml(x.borrowed_at || "")}</td>
         <td>${escapeHtml(x.due_date || "")}</td>
-        <td><span class="badge ${cls}">${escapeHtml(x.status || "")}</span></td>
+        <td><span class="badge ${badgeClass}">${escapeHtml(x.status || "")}</span></td>
         <td>
           ${isReturned
-            ? `<span style="color:rgba(234,240,255,.62); font-size:12px;">İade edildi</span>`
-            : `<button class="btn" data-return-id="${x.id}">İade Et</button>`
+            ? `<span class="muted small">İade edildi</span>`
+            : `<button class="ghost" data-return-id="${x.id}">İade Et</button>`
           }
         </td>
       `;
@@ -412,14 +340,12 @@
     myBorrowsTbody.querySelectorAll("button[data-return-id]").forEach(btn => {
       btn.addEventListener("click", async () => {
         const id = btn.getAttribute("data-return-id");
-        btn.textContent = "İade alınıyor…";
         const { res, data } = await apiPost(`/web/api/borrow/return/${id}`, {});
         if (!res.ok || !data.success) {
-          btn.textContent = "İade Et";
-          toast(data.message || "İade başarısız", false);
+          showMsg(data.message || "İade başarısız", "err");
           return;
         }
-        toast("İade alındı ✅", true);
+        showMsg("İade alındı ✅", "ok");
         await loadBooks();
         await loadMyBorrows();
       });
@@ -430,33 +356,44 @@
     const bookId = Number(bookSelect.value);
     const days = Number(daysInput.value);
 
-    if (!bookId) return toast("Önce bir kitap seç", false, "Uyarı");
-    if (!days || days < 1 || days > 60) return toast("Gün sayısı 1-60 arası olmalı", false, "Uyarı");
+    if (!bookId) {
+      showMsg("Önce bir kitap seç", "warn");
+      return;
+    }
+    if (!days || days < 1 || days > 60) {
+      showMsg("Gün sayısı 1-60 arası olmalı", "warn");
+      return;
+    }
 
-    borrowBtn.textContent = "İşleniyor…";
     const { res, data } = await apiPost("/web/api/borrow", { book_id: bookId, days });
-    borrowBtn.textContent = "Ödünç Al";
+    if (!res.ok || !data.success) {
+      showMsg(data.message || "Ödünç alma başarısız", "err");
+      return;
+    }
 
-    if (!res.ok || !data.success) return toast(data.message || "Ödünç alma başarısız", false);
-
-    toast(`Ödünç alındı ✅ Teslim: ${data.due_date}`, true);
+    showMsg(`Ödünç alındı ✅ Teslim: ${data.due_date}`, "ok");
     await loadBooks();
     await loadMyBorrows();
   });
 
-  refreshBooksBtn.addEventListener("click", async () => {
+  refreshBtn.addEventListener("click", async () => {
     await loadBooks();
-    toast("Kitap listesi güncellendi", true);
+    showMsg("Kitap listesi yenilendi", "ok");
   });
 
-  searchInput.addEventListener("input", () => renderBooks(filterBooks()));
+  myRefreshBtn.addEventListener("click", async () => {
+    await loadMyBorrows();
+    showMsg("Ödünçler yenilendi", "ok");
+  });
 
-  function refreshAll(){ loadBooks(); loadMyBorrows(); }
+  searchInput.addEventListener("input", () => {
+    currentPage = 1;
+    renderBooks();
+  });
 
-  (function init(){
-    if(role === "admin") document.getElementById("adminLink").style.display = "inline-block";
-    refreshAll();
-  })();
+  // initial
+  loadBooks();
+  loadMyBorrows();
 </script>
 </body>
 </html>

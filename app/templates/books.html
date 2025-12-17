@@ -164,6 +164,25 @@
     .toast b{ display:block; margin-bottom:2px; }
     .toast .small{ color: rgba(234,240,255,.66); font-size: 12px; }
 
+    /* pagination tabs */
+    .tabBtn{
+      padding:8px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: rgba(234,240,255,.9);
+      cursor:pointer;
+      font-weight:700;
+      font-size:12px;
+      transition:.15s ease;
+    }
+    .tabBtn:hover{ transform: translateY(-1px); border-color: rgba(110,231,255,.25); }
+    .tabBtn.active{
+      border:0;
+      background: linear-gradient(135deg, rgba(110,231,255,.95), rgba(167,139,250,.95));
+      color:#071018;
+    }
+
     @media (max-width: 980px){
       .grid{ grid-template-columns: 1fr; }
       .input{ width:100%; }
@@ -207,6 +226,16 @@
             <input class="input" id="q" placeholder="Ara: başlık / yazar / ISBN" />
             <button class="btn" onclick="loadBooks()">Yenile</button>
             <button class="btn primary" onclick="quickBorrowGo()">Ödünç Sayfası</button>
+          </div>
+        </div>
+
+        <!-- PAGINATION BAR -->
+        <div id="pager" style="padding:12px 14px; border-top:1px solid rgba(255,255,255,.08); border-bottom:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.03); display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <div id="pageTabs" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+          <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+            <button class="btn" id="prevBtn">◀</button>
+            <span class="muted" id="pageInfo" style="font-size:12px;">—</span>
+            <button class="btn" id="nextBtn">▶</button>
           </div>
         </div>
 
@@ -283,6 +312,9 @@
     const role = "{{ role }}";
     let allBooks = [];
 
+    const PAGE_SIZE = 10;
+    let currentPage = 1;
+
     function toast(msg, ok=true, title=null){
       const t = document.getElementById("toast");
       document.getElementById("toastTitle").textContent = title || (ok ? "Başarılı" : "Hata");
@@ -355,6 +387,90 @@
       }
     }
 
+    function getTotalPages(filtered){
+      return Math.max(1, Math.ceil((filtered.length || 0) / PAGE_SIZE));
+    }
+
+    function getPageSlice(filtered, page){
+      const totalPages = getTotalPages(filtered);
+      const p = Math.min(Math.max(1, page), totalPages);
+      const start = (p - 1) * PAGE_SIZE;
+      return filtered.slice(start, start + PAGE_SIZE);
+    }
+
+    function renderPager(filtered){
+      const tabs = document.getElementById("pageTabs");
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const info = document.getElementById("pageInfo");
+
+      const totalPages = getTotalPages(filtered);
+      if(currentPage > totalPages) currentPage = totalPages;
+
+      tabs.innerHTML = "";
+
+      const maxTabs = 9;
+      let pages = [];
+
+      if(totalPages <= maxTabs){
+        pages = Array.from({length: totalPages}, (_,i)=> i+1);
+      }else{
+        const set = new Set([1, totalPages, currentPage, currentPage-1, currentPage+1, currentPage-2, currentPage+2]);
+        let base = Array.from(set).filter(p=> p>=1 && p<=totalPages).sort((a,b)=>a-b);
+
+        let withDots = [];
+        for(let i=0;i<base.length;i++){
+          withDots.push(base[i]);
+          if(i < base.length-1 && base[i+1] - base[i] > 1){
+            withDots.push("...");
+          }
+        }
+        pages = withDots;
+      }
+
+      for(const p of pages){
+        if(p === "..."){
+          const span = document.createElement("span");
+          span.className = "muted";
+          span.style.fontSize = "12px";
+          span.textContent = "…";
+          tabs.appendChild(span);
+          continue;
+        }
+        const b = document.createElement("button");
+        b.className = "tabBtn" + (p === currentPage ? " active" : "");
+        b.textContent = String(p);
+        b.onclick = ()=>{
+          currentPage = p;
+          renderPage();
+        };
+        tabs.appendChild(b);
+      }
+
+      prevBtn.disabled = currentPage <= 1;
+      nextBtn.disabled = currentPage >= totalPages;
+
+      prevBtn.onclick = ()=>{
+        if(currentPage > 1){ currentPage--; renderPage(); }
+      };
+      nextBtn.onclick = ()=>{
+        if(currentPage < totalPages){ currentPage++; renderPage(); }
+      };
+
+      const start = filtered.length ? ((currentPage-1)*PAGE_SIZE + 1) : 0;
+      const end = Math.min(filtered.length, currentPage*PAGE_SIZE);
+      info.textContent = `Sayfa ${currentPage}/${totalPages} • ${start}-${end} / ${filtered.length}`;
+    }
+
+    function renderPage(){
+      const filtered = filterBooks();
+      const pageList = getPageSlice(filtered, currentPage);
+      render(pageList);
+      document.getElementById("listMeta").textContent =
+        `Toplam ${allBooks.length} kitap • Filtre ${filtered.length} • Gösterilen ${pageList.length}`;
+      renderPager(filtered);
+    }
+
     async function loadBooks(){
       try{
         const res = await fetch("/web/api/books", { credentials:"include" });
@@ -364,9 +480,8 @@
           return;
         }
         allBooks = data.data || [];
-        const list = filterBooks();
-        render(list);
-        document.getElementById("listMeta").textContent = `Toplam ${allBooks.length} kitap • Gösterilen ${list.length}`;
+        currentPage = 1;
+        renderPage();
       }catch(e){
         toast("İstek hatası: " + e, false);
       }
@@ -413,9 +528,8 @@
     }
 
     document.getElementById("q").addEventListener("input", ()=>{
-      const list = filterBooks();
-      render(list);
-      document.getElementById("listMeta").textContent = `Toplam ${allBooks.length} kitap • Gösterilen ${list.length}`;
+      currentPage = 1;
+      renderPage();
     });
 
     (function init(){

@@ -160,6 +160,25 @@
     .mutedSmall{ color: rgba(234,240,255,.62); font-size: 12px; margin-top:4px; }
     .right{ text-align:right; }
 
+    /* pagination tabs */
+    .tabBtn{
+      padding:8px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: rgba(234,240,255,.9);
+      cursor:pointer;
+      font-weight:700;
+      font-size:12px;
+      transition:.15s ease;
+    }
+    .tabBtn:hover{ transform: translateY(-1px); border-color: rgba(110,231,255,.25); }
+    .tabBtn.active{
+      border:0;
+      background: linear-gradient(135deg, rgba(110,231,255,.95), rgba(167,139,250,.95));
+      color:#071018;
+    }
+
     .toast{
       position: fixed; inset: 18px 18px auto auto;
       width:min(420px, calc(100vw - 36px));
@@ -338,9 +357,20 @@
           <div>
             <h2>Kitap Yönetimi</h2>
             <div class="muted">Düzenle • sil • filtrele</div>
+            <div class="mutedSmall" id="booksMeta">—</div>
           </div>
           <div class="row" style="min-width:280px;">
-            <input class="input" id="search" placeholder="Ara: başlık / yazar" oninput="renderFiltered()" />
+            <input class="input" id="search" placeholder="Ara: başlık / yazar" oninput="onSearchInput()" />
+          </div>
+        </div>
+
+        <!-- PAGINATION BAR -->
+        <div id="pager" style="padding:12px 14px; border-top:1px solid rgba(255,255,255,.08); border-bottom:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.03); display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <div id="pageTabs" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+          <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+            <button class="btn" id="prevBtn" type="button">◀</button>
+            <span class="muted" id="pageInfo" style="font-size:12px;">—</span>
+            <button class="btn" id="nextBtn" type="button">▶</button>
           </div>
         </div>
 
@@ -366,8 +396,8 @@
               <div class="muted">Seçili Kitap ID: <b id="e_id">—</b></div>
             </div>
             <div class="row">
-              <button class="btn" onclick="clearEdit()">Temizle</button>
-              <button class="btn primary" onclick="updateBook()">Kaydet</button>
+              <button class="btn" onclick="clearEdit()" type="button">Temizle</button>
+              <button class="btn primary" onclick="updateBook()" type="button">Kaydet</button>
             </div>
           </div>
 
@@ -407,7 +437,7 @@
               <h2 style="font-size:16px; margin:0;">Bildirimler</h2>
               <div class="muted">Geciken veya teslim tarihi yaklaşan kayıtlar</div>
             </div>
-            <button class="btn" onclick="loadNotifications()">Yenile</button>
+            <button class="btn" onclick="loadNotifications()" type="button">Yenile</button>
           </div>
 
           <div style="overflow:auto; margin-top:10px;">
@@ -437,6 +467,9 @@
   <script>
     let selectedBookId = null;
     let allBooks = [];
+
+    const PAGE_SIZE = 10;
+    let currentPage = 1;
 
     function toast(msg, ok=true, title=null){
       const t = document.getElementById("toast");
@@ -502,16 +535,95 @@
       const res = await fetch("/web/api/books", { credentials:"include" });
       const data = await res.json().catch(()=>({}));
       allBooks = data.data || [];
-      renderFiltered();
+      currentPage = 1;
+      renderPage();
     }
 
-    function renderFiltered(){
+    function getFilteredBooks(){
       const q = (document.getElementById("search").value || "").trim().toLowerCase();
-      const list = !q ? allBooks : allBooks.filter(b =>
+      return !q ? allBooks : allBooks.filter(b =>
         String(b.title||"").toLowerCase().includes(q) ||
         String(b.author||"").toLowerCase().includes(q)
       );
+    }
 
+    function getTotalPages(filtered){
+      return Math.max(1, Math.ceil((filtered.length || 0) / PAGE_SIZE));
+    }
+
+    function getPageSlice(filtered, page){
+      const totalPages = getTotalPages(filtered);
+      const p = Math.min(Math.max(1, page), totalPages);
+      const start = (p - 1) * PAGE_SIZE;
+      return filtered.slice(start, start + PAGE_SIZE);
+    }
+
+    function renderPager(filtered){
+      const tabs = document.getElementById("pageTabs");
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const info = document.getElementById("pageInfo");
+
+      const totalPages = getTotalPages(filtered);
+      if(currentPage > totalPages) currentPage = totalPages;
+
+      tabs.innerHTML = "";
+
+      const maxTabs = 9;
+      let pages = [];
+
+      if(totalPages <= maxTabs){
+        pages = Array.from({length: totalPages}, (_,i)=> i+1);
+      }else{
+        const set = new Set([1, totalPages, currentPage, currentPage-1, currentPage+1, currentPage-2, currentPage+2]);
+        let base = Array.from(set).filter(p=> p>=1 && p<=totalPages).sort((a,b)=>a-b);
+
+        let withDots = [];
+        for(let i=0;i<base.length;i++){
+          withDots.push(base[i]);
+          if(i < base.length-1 && base[i+1] - base[i] > 1){
+            withDots.push("...");
+          }
+        }
+        pages = withDots;
+      }
+
+      for(const p of pages){
+        if(p === "..."){
+          const span = document.createElement("span");
+          span.className = "muted";
+          span.style.fontSize = "12px";
+          span.textContent = "…";
+          tabs.appendChild(span);
+          continue;
+        }
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "tabBtn" + (p === currentPage ? " active" : "");
+        b.textContent = String(p);
+        b.onclick = ()=>{
+          currentPage = p;
+          renderPage();
+        };
+        tabs.appendChild(b);
+      }
+
+      prevBtn.disabled = currentPage <= 1;
+      nextBtn.disabled = currentPage >= totalPages;
+
+      prevBtn.onclick = ()=>{
+        if(currentPage > 1){ currentPage--; renderPage(); }
+      };
+      nextBtn.onclick = ()=>{
+        if(currentPage < totalPages){ currentPage++; renderPage(); }
+      };
+
+      const start = filtered.length ? ((currentPage-1)*PAGE_SIZE + 1) : 0;
+      const end = Math.min(filtered.length, currentPage*PAGE_SIZE);
+      info.textContent = `Sayfa ${currentPage}/${totalPages} • ${start}-${end} / ${filtered.length}`;
+    }
+
+    function renderTable(list){
       const tbody = document.getElementById("booksTbody");
       tbody.innerHTML = "";
 
@@ -537,6 +649,23 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    function renderPage(){
+      const filtered = getFilteredBooks();
+      const totalPages = getTotalPages(filtered);
+      if(currentPage > totalPages) currentPage = totalPages;
+
+      const pageList = getPageSlice(filtered, currentPage);
+      renderTable(pageList);
+      renderPager(filtered);
+
+      setText("booksMeta", `Toplam ${allBooks.length} • Filtre ${filtered.length} • Gösterilen ${pageList.length}`);
+    }
+
+    function onSearchInput(){
+      currentPage = 1;
+      renderPage();
     }
 
     function selectBook(b){
