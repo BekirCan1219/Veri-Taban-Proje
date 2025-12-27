@@ -1,15 +1,15 @@
 from datetime import datetime, timedelta
 from flask import Blueprint, jsonify, request, session
-from sqlalchemy import func, text
-
+from sqlalchemy import func, text ,false
 from app.extensions import db
-from app.models.book import Book
-from app.models.borrow import Borrow
 from app.models.penalty import Penalty
-from app.models.user import User  # ✅ eklendi (username/email için)
-
+from app.models.notification_log import NotificationLog
+from app.models.borrow import Borrow
+from app.models.book import Book
+from app.models.user import User
 from app.repositories.book_repo import BookRepo
 from app.repositories.borrow_repo import BorrowRepo
+from sqlalchemy.orm import joinedload
 
 
 web_api_bp = Blueprint("web_api", __name__, url_prefix="/web/api")
@@ -388,7 +388,7 @@ def admin_penalties():
     )
 
     if only_unpaid:
-        q = q.filter(Penalty.is_paid.is_(False))
+        q = q.filter(Penalty.is_paid == false())  # MSSQL uyumlu
 
     rows = q.order_by(Penalty.updated_at.desc()).limit(200).all()
 
@@ -397,26 +397,26 @@ def admin_penalties():
         data.append({
             "id": p.id,
             "borrow_id": p.borrow_id,
-
-            "username": getattr(u, "username", None),
-            "email": getattr(u, "email", None),
-            "user_id": int(u.id) if u else (int(b.user_id) if b else None),
-
-            "days_overdue": int(p.days_overdue) if p.days_overdue is not None else 0,
-            "daily_fee": float(p.daily_fee) if p.daily_fee is not None else 0.0,
-            "amount": float(p.amount) if p.amount is not None else 0.0,
+            "days_overdue": int(p.days_overdue),
+            "daily_fee": float(p.daily_fee),
+            "amount": float(p.amount),
             "is_paid": bool(p.is_paid),
-
-            "updated_at": str(p.updated_at) if getattr(p, "updated_at", None) else None,
-            "created_at": str(p.created_at) if getattr(p, "created_at", None) else None,
+            "updated_at": str(p.updated_at),
+            "created_at": str(p.created_at),
 
             "due_date": str(b.due_date) if b and b.due_date else None,
+            "returned_at": str(b.returned_at) if b and b.returned_at else None,
+            "status": getattr(b, "status", None),
+
+            # ✅ Admin için kritik: kimin cezası
+            "user_id": int(u.id) if u else (int(b.user_id) if b else None),
+            "username": getattr(u, "username", None) if u else None,
+            "email": getattr(u, "email", None) if u else None,
+
             "book_id": int(b.book_id) if b else None,
-            "status": getattr(b, "status", None) if b else None
         })
 
     return jsonify({"success": True, "data": data})
-
 
 # -----------------------------
 # User penalties (session based)  ✅
@@ -504,3 +504,54 @@ def debug_session():
 @web_api_bp.get("/penalties/my/alias")
 def penalties_my_alias():
     return penalties_my()
+
+@web_api_bp.get("/admin/mail-report")
+def admin_mail_report():
+    if not _require_login():
+        return _json_error("Unauthorized", 401)
+    if session.get("role") != "admin":
+        return _json_error("Yetkisiz", 403)
+
+    # limit güvenli aralık
+    try:
+        limit = int(request.args.get("limit", "200"))
+    except Exception:
+        limit = 200
+    limit = max(1, min(limit, 500))
+
+    # NotificationLog -> Borrow -> User/Book (eager load)
+    rows = (
+        NotificationLog.query
+        .options(
+            joinedload(NotificationLog.borrow).joinedload(Borrow.user),
+            joinedload(NotificationLog.borrow).joinedload(Borrow.book),
+        )
+        .order_by(NotificationLog.sent_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    data = []
+    for n in rows:
+        b = n.borrow
+        u = getattr(b, "user", None) if b else None
+        bk = getattr(b, "book", None) if b else None
+
+        data.append({
+            "id": n.id,
+            "borrow_id": n.borrow_id,
+            "type": n.type,
+
+            # admin UI için:
+            "user": getattr(u, "username", None) if u else None,
+            "email": getattr(u, "email", None) if u else (n.email or None),
+            "book": getattr(bk, "title", None) if bk else None,
+            "due_date": str(getattr(b, "due_date", None)) if b and getattr(b, "due_date", None) else None,
+
+            "sent_at": str(n.sent_at) if n.sent_at else None,
+            "success": bool(n.success),
+            "error": n.error_message,
+            "message": n.message,
+        })
+
+    return jsonify({"success": True, "data": data})
