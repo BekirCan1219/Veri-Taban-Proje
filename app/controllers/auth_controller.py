@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify,session
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from app.services.auth_service import AuthService
 from app.repositories.user_repo import UserRepo
@@ -61,3 +61,38 @@ def me():
             "role": claims.get("role", user.role)
         }
     })
+
+@auth_bp.post("/web/login", endpoint="web_login")
+def web_login():
+    """
+    Web UI için session tabanlı login.
+    Body: { "username": "...", "password": "..." }
+    Başarılı olursa session["user_id"], session["username"], session["role"] dolar.
+    """
+    data = request.get_json() or {}
+    username = (data.get("username") or "").strip()
+    password = (data.get("password") or "").strip()
+
+    try:
+        # AuthService.login zaten kullanıcıyı doğruluyor
+        token, user = AuthService.login(username, password)
+
+        # ✅ SESSION SET
+        session.clear()
+        session["user_id"] = int(user.id)
+        session["username"] = user.username
+        session["role"] = user.role
+
+        return jsonify({
+            "success": True,
+            "message": "Web login başarılı",
+            "user": {"id": user.id, "username": user.username, "role": user.role}
+        })
+    except ValueError as e:
+        return jsonify({"success": False, "message": str(e)}), 401
+
+
+@auth_bp.get("/web/logout", endpoint="web_logout")
+def web_logout():
+    session.clear()
+    return jsonify({"success": True, "message": "Çıkış yapıldı"})

@@ -1,0 +1,338 @@
+<!-- app/templates/penalties.html -->
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ceza Durumu | Smart Library</title>
+
+  <style>
+    :root{
+      --bg:#0b0f17;
+      --panel:#121a2a;
+      --panel2:#0f1626;
+      --border:#22314f;
+      --text:#e6e6e6;
+      --muted:#9aa4b2;
+      --good:#3ddc97;
+      --warn:#ffcc66;
+      --bad:#ff6b6b;
+      --link:#9ad;
+    }
+    *{ box-sizing:border-box; }
+    body{ margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial; background:var(--bg); color:var(--text); }
+    header{
+      padding:16px 20px; background:var(--panel); border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    header h1{ margin:0; font-size:18px; }
+    header nav a{
+      color:var(--link); text-decoration:none; margin-left:10px; font-size:14px;
+      padding:6px 10px; border:1px solid var(--border); border-radius:10px; background:var(--panel2);
+    }
+    .wrap{ padding:20px; max-width:1100px; margin:0 auto; }
+    .card{
+      background:var(--panel); border:1px solid var(--border); border-radius:14px;
+      padding:14px; margin-bottom:14px;
+    }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
+    .muted{ color:var(--muted); font-size:13px; }
+    table{ width:100%; border-collapse:collapse; margin-top:10px; }
+    th, td{ padding:10px; border-bottom:1px solid var(--border); text-align:left; font-size:14px; }
+    th{ color:var(--muted); font-weight:600; }
+    .pill{
+      display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; border:1px solid var(--border);
+      background:var(--panel2);
+    }
+    .pill.good{ color:var(--good); border-color: rgba(61,220,151,.35); }
+    .pill.bad{ color:var(--bad); border-color: rgba(255,107,107,.35); }
+    .btn{
+      cursor:pointer; border:1px solid var(--border); background:var(--panel2); color:var(--text);
+      padding:8px 12px; border-radius:10px; font-size:13px;
+    }
+    .btn:hover{ filter:brightness(1.08); }
+    .btn:disabled{ opacity:.55; cursor:not-allowed; }
+    .right{ text-align:right; }
+    .sum{
+      display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px; margin-top:10px;
+    }
+    .metric{
+      background:var(--panel2); border:1px solid var(--border); border-radius:14px; padding:12px;
+    }
+    .metric .k{ color:var(--muted); font-size:12px; }
+    .metric .v{ font-size:20px; font-weight:700; margin-top:6px; }
+    .hint{
+      margin-top:10px;
+      padding:10px 12px;
+      border:1px dashed rgba(255,255,255,.18);
+      border-radius:12px;
+      background:rgba(255,255,255,.03);
+      color:rgba(230,230,230,.85);
+      font-size:13px;
+      line-height:1.35;
+    }
+    code{ color:rgba(234,240,255,.92); }
+    .toolbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:var(--panel2);
+      font-size:13px; color:var(--muted);
+    }
+    .chip input{ transform: translateY(1px); }
+    @media (max-width: 860px){
+      .sum{ grid-template-columns:1fr; }
+      header{ flex-direction:column; align-items:flex-start; }
+      header nav a{ margin-left:0; margin-right:8px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Ceza Durumu</h1>
+    <nav>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/books-page">Kitaplar</a>
+      <a href="/my-borrows">Ödünçlerim</a>
+      <a href="/penalties">Cezalar</a>
+    </nav>
+  </header>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="row">
+        <div>
+          <div class="muted">Bu sayfa, gecikme cezalarını listeler.</div>
+          <div class="muted">Veri kaynağı: <code>/web/api/penalties/my</code></div>
+        </div>
+
+        <div class="toolbar">
+          <span class="chip" title="Sadece ödenmemiş cezaları göster">
+            <input type="checkbox" id="onlyUnpaid" checked />
+            Sadece ödenmemiş
+          </span>
+          <button class="btn" id="btnRefresh">Yenile</button>
+        </div>
+      </div>
+
+      <div class="hint" id="loginHint" style="display:none;">
+        <b>Giriş yok / session yok gibi görünüyor.</b><br/>
+        Şunları kontrol et:
+        <ul style="margin:8px 0 0 18px; padding:0;">
+          <li>Önce <code>/login</code> üzerinden giriş yap (web login).</li>
+          <li>Ardından bu sayfayı yenile.</li>
+          <li>Debug için: <code>/web/api/debug/session</code> (user_id dolu olmalı).</li>
+        </ul>
+      </div>
+
+      <div class="sum" id="summary" style="display:none;">
+        <div class="metric">
+          <div class="k">Toplam Ceza Tutarı (filtreli)</div>
+          <div class="v" id="sumTotal">0</div>
+        </div>
+        <div class="metric">
+          <div class="k">Ödenmemiş Ceza (filtreli)</div>
+          <div class="v" id="sumUnpaid">0</div>
+        </div>
+        <div class="metric">
+          <div class="k">Kayıt Sayısı (filtreli)</div>
+          <div class="v" id="sumCount">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <div style="font-weight:700;">Cezalar</div>
+          <div class="muted" id="statusText">Yükleniyor...</div>
+        </div>
+      </div>
+
+      <div style="overflow:auto;">
+        <table id="tbl" style="display:none;">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Borrow ID</th>
+              <th>Gecikme (gün)</th>
+              <th>Günlük Ücret</th>
+              <th>Tutar</th>
+              <th>Durum</th>
+              <th>Due Date</th>
+              <th>Güncelleme</th>
+              <th class="right">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ✅ Session auth (credentials include)
+    const API_MY  = "/web/api/penalties/my";
+    const API_PAY = (id) => `/web/api/penalties/pay/${id}`;
+    const API_DEBUG_SESSION = "/web/api/debug/session";
+
+    // son çekilen ham liste (filtre uygulamak için)
+    let RAW_ROWS = [];
+
+    function money(x) {
+      const n = Number(x || 0);
+      return n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " TL";
+    }
+
+    function isoToLocal(iso) {
+      if (!iso) return "-";
+      try { return new Date(iso).toLocaleString("tr-TR"); }
+      catch { return iso; }
+    }
+
+    function showLoginHint(show){
+      document.getElementById("loginHint").style.display = show ? "block" : "none";
+    }
+
+    async function apiFetch(url, opts = {}) {
+      const headers = Object.assign({}, opts.headers || {}, {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      });
+
+      const res = await fetch(url, Object.assign({}, opts, {
+        headers,
+        credentials: "include"
+      }));
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401) {
+        showLoginHint(true);
+        throw new Error(data.message || "Unauthorized (401) - giriş yapman gerekiyor.");
+      }
+
+      if (!res.ok) {
+        const msg = data.message || data.error || ("HTTP " + res.status);
+        throw new Error(msg);
+      }
+
+      if (data && data.success === false) {
+        throw new Error(data.message || "İşlem başarısız");
+      }
+
+      return data;
+    }
+
+    function applyFilter(rows){
+      const onlyUnpaid = document.getElementById("onlyUnpaid").checked;
+      return onlyUnpaid ? rows.filter(x => !x.is_paid) : rows;
+    }
+
+    function render(rows) {
+      const tbody = document.getElementById("tbody");
+      tbody.innerHTML = "";
+
+      let total = 0;
+      let unpaid = 0;
+
+      rows.forEach(p => {
+        const amount = Number(p.amount || 0);
+        total += amount;
+        if (!p.is_paid) unpaid += amount;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${p.id ?? "-"}</td>
+          <td>${p.borrow_id ?? "-"}</td>
+          <td>${p.days_overdue ?? "-"}</td>
+          <td>${money(p.daily_fee)}</td>
+          <td><b>${money(p.amount)}</b></td>
+          <td>${p.is_paid ? `<span class="pill good">Ödendi</span>` : `<span class="pill bad">Ödenmedi</span>`}</td>
+          <td>${isoToLocal(p.due_date)}</td>
+          <td>${isoToLocal(p.updated_at)}</td>
+          <td class="right">
+            ${p.is_paid ? "" : `<button class="btn" data-pay="${p.id}">Öde</button>`}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("summary").style.display = "grid";
+      document.getElementById("sumTotal").textContent = money(total);
+      document.getElementById("sumUnpaid").textContent = money(unpaid);
+      document.getElementById("sumCount").textContent = rows.length;
+
+      // ödeme butonları
+      tbody.querySelectorAll("[data-pay]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const id = btn.getAttribute("data-pay");
+          if (!id) return;
+
+          if (!confirm("Bu cezayı ödendi olarak işaretlemek istiyor musun?")) return;
+
+          try {
+            btn.disabled = true;
+            await apiFetch(API_PAY(id), { method: "POST" });
+            await load(); // 🔥 ödedikten sonra yeniden çek (DB güncel)
+          } catch (e) {
+            alert(e.message || String(e));
+          } finally {
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
+    function rerenderFromCache(){
+      const statusText = document.getElementById("statusText");
+      const tbl = document.getElementById("tbl");
+
+      const filtered = applyFilter(RAW_ROWS);
+
+      if (!filtered.length) {
+        tbl.style.display = "none";
+        document.getElementById("summary").style.display = "none";
+        statusText.textContent = RAW_ROWS.length
+          ? "Filtreye göre kayıt yok."
+          : "Henüz ceza kaydın yok.";
+        return;
+      }
+
+      statusText.textContent = "Liste güncel.";
+      tbl.style.display = "table";
+      render(filtered);
+    }
+
+    async function load() {
+      const statusText = document.getElementById("statusText");
+      const tbl = document.getElementById("tbl");
+
+      statusText.textContent = "Yükleniyor...";
+      tbl.style.display = "none";
+      document.getElementById("summary").style.display = "none";
+      showLoginHint(false);
+
+      try {
+        // (opsiyonel) session debug hızlı kontrol
+        const dbg = await apiFetch(API_DEBUG_SESSION, { method: "GET" }).catch(()=>null);
+        if (dbg && (dbg.user_id === null || dbg.user_id === undefined || dbg.user_id === "")) {
+          showLoginHint(true);
+        }
+
+        const data = await apiFetch(API_MY, { method: "GET" });
+        RAW_ROWS = (data.data || []);
+
+        rerenderFromCache();
+
+      } catch (e) {
+        statusText.textContent = "Hata: " + (e.message || String(e));
+      }
+    }
+
+    document.getElementById("btnRefresh").addEventListener("click", load);
+    document.getElementById("onlyUnpaid").addEventListener("change", rerenderFromCache);
+
+    load();
+  </script>
+</body>
+</html>

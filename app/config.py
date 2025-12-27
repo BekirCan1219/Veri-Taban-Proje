@@ -15,6 +15,12 @@ class Config:
 
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "jwt-super-secret")
 
+    # ✅ SESSION COOKIE AYARLARI (EKLE)
+    SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME", "smart_library_session")
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
+    SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "0") == "1"
+
     # Mail (şimdilik dummy; sonra gerçek SMTP ekleyeceğiz)
     MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
     MAIL_PORT = int(os.getenv("MAIL_PORT", "587"))

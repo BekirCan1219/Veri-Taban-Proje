@@ -114,3 +114,4 @@ def books_redirect():
 @web_bp.get("/borrow")
 def borrow_redirect():
     return redirect(url_for("web.borrow_page"))
+

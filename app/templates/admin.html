@@ -454,6 +454,38 @@
             </table>
           </div>
           <div id="notifMsg" class="mutedSmall"></div>
+
+          <!-- NEW: PENALTIES (UNPAID) -->
+          <hr style="border:none; border-top:1px solid rgba(255,255,255,.10); margin:14px 0;">
+
+          <div class="cardhd" style="padding:0; border:0; background:none;">
+            <div>
+              <h2 style="font-size:16px; margin:0;">Cezalar (Ödenmemiş)</h2>
+              <div class="muted">Kim ne kadar ceza ödeyecek?</div>
+              <div class="mutedSmall" id="penaltiesMeta">—</div>
+            </div>
+            <button class="btn" onclick="loadAdminPenalties()" type="button">Yenile</button>
+          </div>
+
+          <div style="overflow:auto; margin-top:10px;">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:70px;">ID</th>
+                  <th style="width:90px;">Borrow</th>
+                  <th style="width:90px;">User</th>
+                  <th style="width:90px;">Book</th>
+                  <th style="width:120px;">Gecikme</th>
+                  <th class="right" style="width:160px;">Tutar</th>
+                  <th style="width:120px;">Durum</th>
+                  <th class="right" style="width:210px;">Güncelleme</th>
+                </tr>
+              </thead>
+              <tbody id="penaltiesTbody"></tbody>
+            </table>
+          </div>
+          <div id="penaltiesMsg" class="mutedSmall"></div>
+          <!-- /NEW -->
         </div>
       </div>
     </div>
@@ -491,6 +523,11 @@
         .replaceAll("'","&#039;");
     }
 
+    function moneyTRY(x){
+      const n = Number(x || 0);
+      return n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " TL";
+    }
+
     function clearCreate(){
       document.getElementById("c_title").value = "";
       document.getElementById("c_author").value = "";
@@ -517,6 +554,7 @@
       await loadOverdue();
       await loadNotifications();
       await loadMailReport();
+      await loadAdminPenalties(); // NEW
     }
 
     async function loadStats(){
@@ -849,6 +887,58 @@
       }catch(e){
         tb.innerHTML = `<tr><td colspan="6" style="color:rgba(234,240,255,.65); padding:16px;">Mail report endpoint’i yoksa bu alan boş kalır.</td></tr>`;
         setText("mailReportMsg","Endpoint yok / hata");
+      }
+    }
+
+    // NEW: penalties list for admin
+    async function loadAdminPenalties(){
+      setText("penaltiesMsg","Yükleniyor…");
+      setText("penaltiesMeta","—");
+      const tb = document.getElementById("penaltiesTbody");
+      tb.innerHTML = "";
+
+      try{
+        const res = await fetch("/web/api/admin/penalties?only_unpaid=1", { credentials:"include" });
+        const data = await res.json().catch(()=>({}));
+
+        if(!res.ok || data.success === false){
+          setText("penaltiesMsg", data.message || "Cezalar alınamadı.");
+          return;
+        }
+
+        const rows = data.data || [];
+        if(!rows.length){
+          tb.innerHTML = `<tr><td colspan="8" style="color:rgba(234,240,255,.65); padding:16px;">Ödenmemiş ceza yok.</td></tr>`;
+          setText("penaltiesMsg","0 kayıt");
+          setText("penaltiesMeta","Toplam: 0,00 TL");
+          return;
+        }
+
+        let total = 0;
+        rows.forEach(p => total += Number(p.amount || 0));
+
+        rows.forEach(p=>{
+          const isPaid = !!p.is_paid;
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${p.id ?? "-"}</td>
+            <td>${p.borrow_id ?? "-"}</td>
+            <td>${p.user_id ?? "-"}</td>
+            <td>${p.book_id ?? "-"}</td>
+            <td><span class="badge warn">${Number(p.days_overdue||0)} gün</span></td>
+            <td class="right"><b>${moneyTRY(p.amount)}</b></td>
+            <td><span class="badge ${isPaid ? "ok" : "err"}">${isPaid ? "Ödendi" : "Ödenmedi"}</span></td>
+            <td class="right">${escapeHtml(p.updated_at || p.created_at || "-")}</td>
+          `;
+          tb.appendChild(tr);
+        });
+
+        setText("penaltiesMsg", `Kayıt: ${rows.length}`);
+        setText("penaltiesMeta", `Toplam ödenmemiş: ${moneyTRY(total)} • Kayıt: ${rows.length}`);
+
+      }catch(e){
+        tb.innerHTML = `<tr><td colspan="8" style="color:rgba(234,240,255,.65); padding:16px;">Yüklenemedi.</td></tr>`;
+        setText("penaltiesMsg","Yüklenemedi.");
       }
     }
 

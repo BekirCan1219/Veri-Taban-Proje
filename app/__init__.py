@@ -31,7 +31,8 @@ def create_app():
     from app.controllers.book_controller import book_bp
     from app.controllers.borrow_controller import borrow_bp
     from app.controllers.notification_controller import notif_bp
-
+    from app.controllers.penalty_controller import penalty_bp
+    app.register_blueprint(penalty_bp)
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(book_bp, url_prefix="/books")
     app.register_blueprint(borrow_bp, url_prefix="/borrow")
